@@ -1,8 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/google/uuid"
+)
 import "example.com/gta_test/pkg/shared"
 
 func main() {
 	fmt.Println(shared.Sum(11, 22))
+	fmt.Println(uuid.NewString())
 }
