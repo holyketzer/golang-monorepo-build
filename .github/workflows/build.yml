@@ -1,0 +1,66 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check_modified_binaries:
+    name: Check modified binaries
+    runs-on: ubuntu-latest
+    outputs:
+      modified_service: ${{ steps.gta.outputs.value }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ^1.17
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install GTA
+        run: go install github.com/digitalocean/gta/cmd/gta@latest
+
+      - name: These line is here to show how this pipeline works step by stes
+        run: gta -base origin/main ./... | tr -s " " "\012"
+      - run: gta -base origin/main ./... | tr -s " " "\012" | grep gta_test/cmd/
+      - run: gta -base origin/main ./... | tr -s " " "\012" | grep gta_test/cmd/ | sed -e 's/example.com\/gta_test\/cmd\///g'
+      - run: gta -base origin/main ./... | tr -s " " "\012" | grep gta_test/cmd/ | sed -e 's/example.com\/gta_test\/cmd\///g' | jq -R -s -c 'split("\n")[:-1]'
+
+      - name: Vendor deps
+        run: go mod vendor
+      - name: Find all changed packages comparing to origin/main
+        id: gta
+        run:
+          # Get all affected by this PR packages
+          # Split each package on new line
+          # Filter executable binaries in cmd
+          # Cut github.com/workato/gta_test/cmd prefix
+          # Convert to JSON array
+          echo "value=$(gta -base origin/main ./... | tr -s " " "\012" | grep gta_test/cmd/ | sed -e "s/example.com\/gta_test\/cmd\///g" | jq -R -s -c 'split("\n")[:-1]')" >> "$GITHUB_OUTPUT"
+
+  image_build_preview-label-ci-build-test:
+    name: Build docker
+    needs: check_modified_binaries
+    runs-on: ubuntu-latest
+    if: ${{ fromJSON(needs.check_modified_binaries.outputs.modified_service)[0] != null }}
+    strategy:
+      fail-fast: false # Don't stop other jobs if one of them has been failed
+      matrix:
+        service: ${{ fromJSON(needs.check_modified_binaries.outputs.modified_service) }}
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ^1.17
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Build
+        run: |
+          echo "Build ${{ matrix.service }} binary"
+          go build -o ${{ matrix.service }} cmd/${{ matrix.service }}/main.go
