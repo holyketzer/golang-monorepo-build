@@ -9,5 +9,4 @@ import (
 func main() {
 	fmt.Println(shared.Sum(11, 22))
 	fmt.Println(uuid.NewString())
-	fmt.Println(uuid.NewString())
 }
