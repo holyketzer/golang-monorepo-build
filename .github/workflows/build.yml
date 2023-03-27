@@ -26,11 +26,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Should fetch all commits, not only last commit, to allow GTA analyze it
 
       # Detect previous tag
+      - run: echo ${{ github.ref }}
       - name: Get Previous tag (current event is tag)
-        if: github.event_name == "push" && startsWith(github.ref, 'refs/tags/${{ env.TAG_PREFIX }}')
+        if: startsWith(github.ref, 'refs/tags/${{ env.TAG_PREFIX }}')
         run: echo "previous_tag=$(git for-each-ref --sort=-creatordate --count 2 --format="%(refname:short)" "refs/tags/${{ env.TAG_PREFIX }}" | tail -n 1)" >> $GITHUB_ENV
       - name: Get Previous tag (current event is PR)
         if: github.event_name == 'pull_request'
