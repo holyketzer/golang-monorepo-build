@@ -1,9 +1,9 @@
 package main
 
 import (
+	"example.com/gta_test/pkg/shared"
 	"fmt"
 	"github.com/google/uuid"
-	"example.com/gta_test/pkg/shared"
 )
 
 func main() {
